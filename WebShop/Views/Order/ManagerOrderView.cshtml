@@ -1,0 +1,468 @@
+﻿
+@{
+    ViewBag.Title = "ManagerOrderView";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<script>
+    Ext.onReady(function () {
+        Ext.define('Items', {
+            extend: 'Ext.data.Model',
+
+            idProperty: 'CartID',
+
+            fields: [
+            
+            {
+                name: 'Code',
+                type: 'string'
+            }, {
+                name: 'Category',
+                type: 'string'
+            }, {
+                name: 'Name',
+                type: 'string'
+            }, {
+                name: 'Price',
+                type: 'int'
+            },
+             {
+                 name: 'Number',
+                 type: 'int'
+             },
+            {
+                name: 'Id',
+                type: 'string'
+            }]
+        });
+        var StoreMemory = Ext.create('Ext.data.Store', {
+            model: 'Items',
+            proxy: {
+                type: 'memory',
+                reader:
+                    {
+                        type: 'json'
+                    }
+            }
+        });
+        var ItemsInOrderGrid = Ext.create('Ext.grid.Panel', {
+            height: 300,
+            title: 'Корзина',
+            store: StoreMemory,
+            flex: 1,
+            margin: '0 0 0 10',
+            columns: [{
+                header: 'Код товара',
+                dataIndex: 'Code'
+            }, {
+                header: 'Наименование товара',
+                dataIndex: 'Name'
+            }, {
+                header: 'Цена',
+                dataIndex: 'Price',
+                flex: 1
+            }, {
+                header: 'Категория товара',
+                dataIndex: 'Category',
+                flex: 1
+            }, {
+                header: 'Количество',
+                dataIndex: 'Number',
+                flex: 1
+            }/*, {
+                header: 'Id',
+                dataIndex: 'Id',
+                flex: 1
+            }*/]
+        });
+        Ext.define('Order', {
+            extend: 'Ext.data.Model',
+
+            idProperty: 'orderID',
+
+            fields: [
+                {
+                    name: 'UserName',
+                    type: 'string'
+                },
+             {
+                name: 'OrderDate',
+                type: 'string'
+
+            }, {
+                name: 'ShipmentDate',
+                type: 'string'
+            }, {
+                name: 'Status',
+                type: 'string'
+            }, {
+                name: 'OrderNumber',
+                type: 'int'
+            },
+            {
+                name: 'Items',
+                type:'auto'
+            },,
+            {
+                name: 'Id',
+                type: 'string'
+            }]
+        });
+
+
+        var StoreOrder = Ext.create('Ext.data.Store', {
+            model: 'Order',
+            autoLoad: true,
+            proxy: {
+                type: 'ajax',
+                api:
+                    {
+
+                        read: '/Order/GetOrdersForManager'
+                    },
+                reader:
+                    {
+
+                        idProperty: 'Id',
+                        type: 'json',
+                        root: 'Data'
+                    }
+            },
+            groupField: 'UserName'
+
+        });
+        var OrderGrid = Ext.create('Ext.grid.Panel',  {
+            height: 300,
+            title: 'Заказы',
+            store: StoreOrder,
+            flex: 1,
+            margin: '0 0 0 10',
+            features: [{
+                id: 'group',
+                ftype: 'groupingsummary',
+                groupHeaderTpl: 'Пользователь:{name}',
+                hideGroupedHeader: true,
+                enableGroupingMenu: false
+            }],
+            columns: [
+            {
+                header: 'Пользователь',
+                dataIndex: 'UserName'
+            },
+
+            {
+                header: 'Дата создания',
+                dataIndex: 'OrderDate'
+            }, {
+                header: 'Дата доставки',
+                dataIndex: 'ShipmentDate'
+            }, {
+                header: 'Статус',
+                dataIndex: 'Status',
+                flex: 1
+            }, {
+                header: 'Номер заказа',
+                dataIndex: 'OrderNumber',
+                flex: 1
+            }/*, {
+                header: 'Id',
+                dataIndex: 'Id',
+                flex: 1
+            }*/],
+            listeners:
+                {
+                    select: function (record, index, eOpts) {
+                        ItemsInOrderGrid.getStore().removeAll();
+                        ItemsInOrderGrid.getStore().loadData(this.getSelectionModel().getSelection()[0].get('Items'));
+                    }
+                },
+            fbar: ['->',
+                    {
+                        xtype: 'button',
+                        text: 'Подтвердить заказ',
+                        width: 200,
+                        margin: '5 0 0 5',
+                        listeners:
+                            {
+                                click: function ()
+                                {
+                                    if (OrderGrid.getSelectionModel().getCount() <= 0) {
+                                        Ext.MessageBox.alert('Error', 'Необходимо выбрать заказ для выполнения операции!');
+                                        return;
+                                    }
+                                    var dateField = Ext.create('Ext.form.field.Date', {
+                                        fieldLabel: 'Выбрать дату доставки',
+                                        format: 'd/m/Y',
+                                        flex: 1,
+                                        minValue: new Date()
+
+                                    });
+                                    var formPanel = Ext.create('Ext.form.Panel', {
+                                        width: 400,
+                                        height: 250,
+
+                                        layout: 'anchor',
+                                        defaults: {
+                                            anchor: '80%'
+                                        },
+                                        items: [dateField ]
+                                        ,
+                                        buttons: [{
+                                            text: 'ОК',
+                                            handler: function () 
+                                            {
+                                                var sndData = new Object();
+                                                sndData.Id = OrderGrid.getSelectionModel().getSelection()[0].get('Id');
+                                                sndData.Date = formPanel.items.get(0).getValue();
+                                                if (sndData.Date == null || sndData.Date === undefined)
+                                                {
+                                                    sndData.Date = "";
+                                                }
+                                                Ext.Ajax.request({
+                                                    method: 'POST',
+                                                    url: '/Order/Confirm',
+                                                    headers: {
+                                                        'Content-Type': 'application/json; charset=utf-8'
+                                                    },
+                                                    params: {
+
+
+                                                    },
+                                                    jsonData: Ext.JSON.encode(sndData),
+                                                    success: function (response) {
+                                                        var jsonData = Ext.JSON.decode(response.responseText);
+                                                        if (jsonData.success == true) {
+                                                            Ext.MessageBox.alert('Подтверждение заказа',
+                                                                'Заказ успешно подтвержден!');
+                                                            OrderGrid.getStore().load();
+                                                        }
+                                                        else {
+                                                            Ext.MessageBox.alert('Закрытие заказа',
+                                                                jsonData.Msg);
+                                                        }
+                                                    }
+                                                });
+                                               
+                                            }
+                                        }]
+                                    });
+                                    var win = new Ext.Window({
+                                        title: 'Подтверждение заказа',
+                                        autoScroll: true,
+                                        modal: true,
+                                        items: [formPanel],
+                                        closable: true
+                                    });
+                                    win.show();
+                                }
+                            }
+                    },
+                {
+                    xtype: 'button',
+                    text: 'Закрыть заказ',
+                    width: 200,
+                    margin: '5 0 0 5',
+                    listeners:
+                        {
+                            click: function ()
+                            {
+                                if (OrderGrid.getSelectionModel().getCount() <= 0) {
+                                    Ext.MessageBox.alert('Error', 'Необходимо выбрать заказ для выполнения операции!');
+                                    return;
+                                }
+                               
+                                var sndObject = new Object();
+                                sndObject.Id = OrderGrid.getSelectionModel().getSelection()[0].get('Id');
+                                Ext.Ajax.request({
+                                    method: 'POST',
+                                    url: '/Order/Close',
+                                    headers: {
+                                        'Content-Type': 'application/json; charset=utf-8'
+                                    },
+                                    params: {
+
+
+                                    },
+                                    jsonData: Ext.JSON.encode(sndObject),
+                                    success: function (response) {
+                                        var jsonData = Ext.JSON.decode(response.responseText);
+                                        if (jsonData.success == true) {
+                                            Ext.MessageBox.alert('Закрытие заказа',
+                                                'Заказ успешно закрыт!');
+                                            OrderGrid.getStore().load();
+                                        }
+                                        else
+                                        {
+                                            Ext.MessageBox.alert('Закрытие заказа',
+                                                jsonData.Msg);
+                                        }
+
+                                    }
+                                });
+                                
+                            }
+                        }
+                },
+                /*{
+                    xtype: 'button',
+                    text: 'Изменить статус',
+                    width: 200,
+                    margin: '5 0 0 5',
+                    listeners:
+                        {
+                            click: function ()
+                            {
+                                if (OrderGrid.getSelectionModel().getCount() < 0)
+                                {
+                                    Ext.MessageBox.alert('Изменение статуса', 'Для изменения статуса заказа необходимо выбрать заказ!');
+                                    return;
+                                }
+                                else
+                                {
+                                    var Status = OrderGrid.getSelectionModel().getSelection()[0].get('Status');
+                                    var states = Ext.create('Ext.data.Store', {
+                                        fields: ['name'],
+                                        data: [
+                                            { "name": "Новый" },
+                                            { "name": "Выполняется" },
+                                            { "name": "Выполнен" }
+                                            
+                                        ]
+                                    });
+                                    var combobox = Ext.create('Ext.form.ComboBox', {
+                                        fieldLabel: 'Статус',
+                                        store: states,
+                                        queryMode: 'local',
+                                        displayField: 'name'
+                                    });
+                                    combobox.setValue(Status);
+                                    var formPanel = Ext.create('Ext.form.Panel', {
+                                        width: 300,
+                                        height: 250,
+
+                                        items: [combobox],
+                                        buttons: [{
+                                            text: 'ОК',
+                                            handler: function () {
+                                                var sndObject = new Object();
+                                                sndObject.Id = OrderGrid.getSelectionModel().getSelection()[0].get('Id');
+                                                sndObject.Status = combobox.getValue();
+                                                Ext.Ajax.request({
+                                                    method: 'POST',
+                                                    url: '/Order/UpdateStatus',
+                                                    headers: {
+                                                        'Content-Type': 'application/json; charset=utf-8'
+                                                    },
+                                                    params: {
+
+
+                                                    },
+                                                    jsonData: Ext.JSON.encode(sndObject),
+                                                    success: function (response) {
+                                                        var jsonData = Ext.JSON.decode(response.responseText);
+                                                        if (jsonData.success == true) {
+                                                            Ext.MessageBox.alert('Изменение статуса',
+                                                                'Статус успешно изменен!');
+                                                            OrderGrid.getStore().load();
+                                                        }
+
+                                                    }
+                                                });
+                                                
+                                            }
+                                        }]
+                                    });
+                                    var win = new Ext.Window({
+                                        title: 'Изменить статус заказа',
+                                        autoScroll: true,
+                                        modal: true,
+                                        items: [formPanel],
+                                        closable: true
+                                    });
+                                    win.show();
+                                }
+                            }
+                        }
+                },*/
+                {
+                xtype: 'button',
+                text: 'Удалить  заказ',
+                width: 200,
+                margin: '5 0 0 5',
+                listeners:
+                {
+                    click: function ()
+                    {
+                        if (OrderGrid.getSelectionModel().getCount() <= 0) {
+                            Ext.MessageBox.alert('Error', 'Необходимо выбрать заказ для выполнения операции!');
+                            return;
+                        }
+                        else
+                        {
+                           
+                            var sndObject = new Object();
+                            sndObject.Id = OrderGrid.getSelectionModel().getSelection()[0].get('Id');
+
+
+                            Ext.Ajax.request({
+                                method: 'POST',
+                                url: '/Order/Delete',
+                                headers: {
+                                    'Content-Type': 'application/json; charset=utf-8'
+                                },
+                                params: {
+
+
+                                },
+                                jsonData: Ext.JSON.encode(sndObject),
+                                success: function (response) {
+                                    var jsonData = Ext.JSON.decode(response.responseText);
+                                    if (jsonData.success == true) {
+
+                                        OrderGrid.getStore().remove(OrderGrid.getSelectionModel().getSelection()[0]);
+                                        ItemsInOrderGrid.getStore().removeAll();
+                                        Ext.MessageBox.alert('Удаление заказа', 'Заказ был успешно удален!');
+                                    }
+
+                                }
+                                //          scope: this,
+                                //            jsonData: sndData
+                            });
+                        }
+                       
+                    }
+                }
+            }]
+        });
+
+        var MainPanel = Ext.create('Ext.panel.Panel',
+           {
+               width: '100%',
+               height: 400,
+               layout: {
+                   type: 'hbox',
+                   align: 'stretch'
+               },
+               items: [OrderGrid, ItemsInOrderGrid],
+               renderTo: 'OrderTableManager'
+
+           });
+    });
+</script>
+<div class="container">
+    <ul>
+        <li class="one">@Html.ActionLink("About", "Index", "Home")</li>
+        <!--
+        -->
+        <li class="two">@Html.ActionLink("Каталог товаров", "Index", "Item")</li>
+        <!--
+        -->
+        <li class="three">@Html.ActionLink("Заказы", "ManagerOrderView", "Order")</li>
+        <!--
+    -->
+        <li class="four">@Html.ActionLink("Пользователи", "AdminView", "Account")</li>
+        <hr class="threehr"/>
+    </ul>
+</div>
+<div id="OrderTableManager"> </div>

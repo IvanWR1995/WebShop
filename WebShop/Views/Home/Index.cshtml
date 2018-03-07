@@ -1,0 +1,41 @@
+﻿@model WebShop.Models.IndexViewModel
+
+@{
+    ViewBag.Title = "Home";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container" >
+    <ul>
+        <li class="one">@Html.ActionLink("About", "Index", "Home", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+        @if (!Request.IsAuthenticated)
+        {
+            <li class="two">@Html.ActionLink("Log in", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+            <!--
+            -->
+            <li class="three">@Html.ActionLink("Registration", "Register", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+
+        }
+        else if(User.IsInRole("user"))
+        {
+            <li class="two">@Html.ActionLink("Каталог товаров", "GetWithoutOrderView", "Item", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+            <!--
+        -->
+            <li class="three">@Html.ActionLink("Мои заказы", "UserOrderView", "Order")</li>
+        }
+        else if (User.IsInRole("Manager"))
+        {
+            <li class="two">@Html.ActionLink("Каталог товаров", "Index", "Item")</li>
+            <!--
+            -->
+            <li class="three">@Html.ActionLink("Заказы", "ManagerOrderView", "Order")</li>
+            <!--
+            -->
+            <li class="four">@Html.ActionLink("Пользователи", "AdminView", "Account")</li>
+        }
+        
+        <hr align="left" />
+        
+    </ul>
+</div>
+ <div align="center">About</div>

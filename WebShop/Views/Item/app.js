@@ -1,0 +1,171 @@
+/*Ext.onReady(function(){ 
+    var toolbar=Ext.create('Ext.toolbar.Toolbar', {
+        dock: 'top',
+		height: '10%',
+		
+        items: [
+            {
+			//	xtype: 'button',
+                text: 'Редактирование товара',
+				width:'100%',
+				textAlign: 'bottom', 
+				height: 50,
+				flex: 1,
+				enableToggle: true,
+				allowDepress: false,
+				toggleGroup: 'ratings'
+				
+            },'-',{
+			//	xtype: 'button',
+                text : 'Список заказов',
+				width:'100%',
+				height: 50,
+				textAlign: 'bottom', 
+				flex: 1,
+				enableToggle: true,
+				allowDepress: false,
+				toggleGroup: 'ratings'
+				
+				
+            },'-',{
+			//	xtype: 'button',
+				text : 'Управление пользователями',
+				width:'100%',
+				height: 50,
+				textAlign: 'bottom', 
+				cls:'ButtonMenu',
+				flex: 1,
+				enableToggle: true,
+				allowDepress: false,
+				toggleGroup: 'ratings'
+            }]
+    });
+    Ext.create('Ext.panel.Panel', { 
+        height: '100%',
+		width: '100%',
+        renderTo: Ext.getBody(),
+        dockedItems: [toolbar]
+    });
+});*/
+Ext.onReady(function(){ 
+var menu = Ext.create('Ext.panel.Panel', { 
+        height: '100%',
+		width: '100%',
+		layout: {
+                    type: 'vbox',
+                    align: 'stretch'
+                },
+        renderTo: Ext.getBody(),
+		items: [
+            {
+				xtype: 'button',
+                text: '<div>Редактирование <br> товара</div>',
+				width:'100%',
+				textAlign: 'bottom', 
+				height: 70,
+				pack: 'start',
+				enableToggle: true,
+				allowDepress: false,
+				
+				toggleGroup: 'ratings'
+				
+				
+            },{
+				xtype: 'button',
+                text : 'Список заказов',
+				width:'100%',
+				height: 70,
+				textAlign: 'bottom', 
+				pack: 'start',
+				enableToggle: true,
+				allowDepress: false,
+				toggleGroup: 'ratings'
+				
+				
+            },{
+				xtype: 'button',
+				text : 'Управление <br> пользователями',
+				width:'100%',
+				height: 70,
+				textAlign: 'bottom', 
+				cls:'ButtonMenu',
+				pack: 'start',
+				enableToggle: true,
+				allowDepress: false,
+				toggleGroup: 'ratings'
+            }]
+		
+    });
+	
+	Ext.define('User', {
+           extend: 'Ext.data.Model',
+                     
+            idProperty: 'userID',
+                     
+            fields: [{
+                name: 'Code',
+                type: 'string'
+            }, {
+                name: 'Name',
+                type: 'string'
+            }, {
+                name: 'Price',
+                type: 'int'
+            }]
+      });
+                 
+       var store = Ext.create('Ext.data.Store', {
+                    model: 'User',
+                    autoLoad: true,
+                    proxy: {
+                            type: 'ajax',
+                            url: 'HomeController',
+                            reader: {
+                                type: 'json',
+                                root: 'users'
+                            }
+                }
+        });
+var grid  = Ext.create('Ext.grid.Panel', {
+        title: 'Пользователи',
+        height: 200,
+        width: 400,
+        store: store,
+        columns: [{
+            header: 'Код товара',
+            dataIndex: 'Code'
+        }, {
+            header: 'Наименование товара',
+            dataIndex: 'Name'
+        },  {
+            header: 'Цена',
+            dataIndex: 'Price',
+            flex:1
+        }, {
+            header: 'Категория товара',
+            dataIndex: 'Category',
+            flex:1
+        }],
+        renderTo: Ext.getBody()
+    });
+Ext.create('Ext.panel.Panel', { 
+        height: '100%',
+		width: '100%',
+		layout: {
+                    type: 'hbox',
+                    align: 'stretch'
+                },
+        renderTo: Ext.getBody(),
+        items:[
+		{
+                    xtype: 'panel',
+                    flex:1,
+					items:[menu]
+                },{
+                    xtype: 'panel',
+					flex:3,
+					items:[grid]
+                }
+		]
+    });
+});

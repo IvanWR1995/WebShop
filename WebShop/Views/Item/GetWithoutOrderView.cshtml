@@ -1,0 +1,384 @@
+﻿@model WebShop.Models.IndexViewModel
+@{
+    ViewBag.Title = "ItemUserView";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script type="text/javascript">
+    Ext.onReady(function () {
+        Ext.define('User', {
+            extend: 'Ext.data.Model',
+
+            idProperty: 'userID',
+
+            fields: [{
+                name: 'Code',
+                type: 'string'
+            }, {
+                name: 'Category',
+                type: 'string'
+            }, {
+                name: 'Name',
+                type: 'string'
+            }, {
+                name: 'Price',
+                type: 'int'
+            },
+            {
+                name: 'Id',
+                type: 'string'
+            }]
+        });
+        Ext.define('Cart', {
+            extend: 'Ext.data.Model',
+
+            idProperty: 'CartID',
+
+            fields: [{
+                name: 'Code',
+                type: 'string'
+            }, {
+                name: 'Category',
+                type: 'string'
+            }, {
+                name: 'Name',
+                type: 'string'
+            }, {
+                name: 'Price',
+                type: 'int'
+            },
+             {
+                 name: 'Number',
+                 type: 'int'
+             },
+            {
+                name: 'Id',
+                type: 'string'
+            }]
+        });
+        var store = Ext.create('Ext.data.Store', {
+            model: 'User',
+            autoLoad: true,
+            proxy: {
+                type: 'ajax',
+                api:
+                    {
+
+                        read: '/Item/Get'
+                    },
+                reader:
+                    {
+
+                        idProperty: 'Id',
+                        type: 'json',
+                        root: 'Data'
+                    }
+            }
+        });
+        var StoreMemory = Ext.create('Ext.data.Store', {
+            model: 'Cart',
+            proxy: {
+                type: 'memory',
+                reader:
+                    {
+                        type: 'json'
+                    }
+            }
+        });
+        var ShopCart = Ext.create('Ext.grid.Panel', {
+            height: 300,
+            title: 'Корзина',
+            store: StoreMemory,
+            flex: 1,
+            margin: '0 0 0 10',
+            columns: [{
+                header: 'Код товара',
+                dataIndex: 'Code'
+            }, {
+                header: 'Наименование товара',
+                dataIndex: 'Name'
+            }, {
+                header: 'Цена',
+                dataIndex: 'Price',
+                flex: 1
+            }, {
+                header: 'Категория товара',
+                dataIndex: 'Category',
+                flex: 1
+            }, {
+                header: 'Количество',
+                dataIndex: 'Number',
+                flex: 1
+            }/*, {
+                header: 'Id',
+                dataIndex: 'Id',
+                flex: 1
+            }*/],
+            fbar: ['->', {
+                xtype: 'button',
+                text: 'Оформить заказ',
+                width: 200,
+                margin: '5 0 0 5',
+                listeners:
+                {
+                    click: function () {
+                       /* var dateField = Ext.create('Ext.form.field.Date', {
+                            fieldLabel: 'Выбрать дату доставки',
+                            format: 'd/m/Y',
+                            flex: 1,
+                            minValue: new Date()
+
+                        });*/
+                        var GridData = ShopCart.getStore().getRange();
+                        if (GridData == null || GridData === undefined || GridData.length == 0) {
+                            Ext.MessageBox.alert('Error', 'Невозможно оформить заказ! Корзина пуста!');
+                            return;
+                        }
+                        var formPanel = Ext.create('Ext.form.Panel', {
+                            width: 400,
+                            height: 250,
+
+                            layout: 'anchor',
+                            defaults: {
+                                anchor: '80%'
+                            },
+
+                            items: [/*dateField,*/ {
+                                xtype: 'textfield',
+                                fieldLabel: 'Адрес',
+                                name: 'Adress',
+                                labelAlign: 'top',
+                                flex: 1
+                            }
+                            ],
+                            buttons: [{
+                                text: 'ОК',
+                                handler: function () {
+                                    var sndData = new Object();
+                                    var Address = formPanel.items.get(0).getValue();
+                                    if (isEmpty(Address))
+                                        Address = "";
+                                    sndData.Address = Address;
+                                    var msgArray = new Array();
+                                    var NumberArray = new Array();
+                                    var GridData = ShopCart.getStore().getRange();
+                                    
+                                    Ext.each(GridData, function (record) {
+                                        var Item = new Object();
+                                        Item.Code = record.get('Code');
+                                        Item.Name = record.get('Name');
+                                        Item.Price = record.get('Price');
+                                        Item.Category = record.get('Category');
+                                        Item.Id = record.get('Id');
+                                        msgArray.push(Item);
+                                        NumberArray.push(record.get('Number'));
+                                        
+                                    });
+                                    sndData.Items = msgArray;
+                                    sndData.Numbers = NumberArray;
+                                    Ext.Ajax.request({
+                                        method: 'POST',
+                                        url: '/Order/Create',
+                                        headers: {
+                                            'Content-Type': 'application/json; charset=utf-8'
+                                        },
+                                        params: {
+
+
+                                        },
+                                        jsonData: Ext.JSON.encode(sndData),
+                                        success: function (response) {
+                                            //grid.store.sync();
+
+                                            ShopCart.getStore().removeAll();
+                                            Ext.MessageBox.alert('Add', 'The row data has been added!');
+
+                                        },
+                                        failure: function (response, opts) {
+                                            Ext.MessageBox.alert('Add', response.responseText);
+                                        }
+                                        //          scope: this,
+                                        //            jsonData: sndData
+                                    });
+                                }
+                            }]
+                        });
+
+
+       
+        
+      /*  var toolbar = new Ext.Toolbar(
+           {
+               dock: 'bottom',
+               items:[{
+                   xtype: 'textfield',
+                   name: 'Price',
+                   emptyText: 'Общая стоимость'
+               }]
+                
+           });*/
+       
+                        var win = new Ext.Window({
+                            title: 'Оформление заказа',
+                            autoScroll: true,
+                            modal: true,
+                            items: [formPanel],
+                            closable: true
+                        });
+                        win.show();
+
+                    }
+                }
+            },{ xtype: 'button',
+                text: 'Удалить',
+                width: 200,
+                margin: '5 0 0 5',
+                listeners:
+                {
+                    click: function () {
+                        if (ShopCart.getSelectionModel().getCount() > 0)
+                            ShopCart.getStore().remove(ShopCart.getSelectionModel().getSelection()[0]);
+                    }
+                }
+            }]
+
+        });
+        var grid = Ext.create('Ext.grid.Panel', {
+            height: 300,
+            flex: 1,
+            title: 'Каталог товаров',
+
+            store: store,
+           
+            columns: [{
+                header: 'Код товара',
+                dataIndex: 'Code'
+            }, {
+                header: 'Наименование товара',
+                dataIndex: 'Name'
+            }, {
+                header: 'Цена',
+                dataIndex: 'Price',
+                flex: 1
+            }, {
+                header: 'Категория товара',
+                dataIndex: 'Category',
+                flex: 1
+            }, {
+                header: 'Id',
+                dataIndex: 'Id',
+                flex: 1
+            }],
+            fbar: ['->', {
+                xtype: 'button',
+                text: 'Добавить в корзину',
+                width: 200,
+                margin: '5 0 0 5',
+                listeners: {
+                    click: function () {
+                        if (grid.getSelectionModel().getCount() <= 0) {
+                            Ext.MessageBox.alert('Добавление в корзину', 'Для выполнения операции необходимо выбрать элемент!');
+                            return;
+                        }
+                        var formPanel = Ext.create('Ext.form.Panel', {
+                            width: 400,
+                            height: 250,
+
+                            layout: 'anchor',
+                            defaults: {
+                                anchor: '80%'
+                            },
+
+                            items: [{
+                                xtype: 'numberfield',
+                                fieldLabel: 'Количество <font color="red">*</font>',
+                                name: 'Number',
+                                labelAlign: 'top',
+                                flex: 1
+                            }],
+                            buttons: [{
+                                text: 'ОК',
+                                handler: function () {
+                                   
+                                        var Id = grid.getSelectionModel().getSelection()[0].get('Id');
+                                        var record = ShopCart.getStore().findRecord("Id", Id);
+                                        var Number = formPanel.items.get(0).getValue();
+                                        if (Number == null || Number === undefined || Number == 0)
+                                        {
+                                            Ext.MessageBox.alert('Добавление в корзину', 'Для выполнения операции\
+                                                необходимо указать количество больше нуля!');
+                                            return;
+                                        }
+                                        if (record != null)
+                                        {
+                                            record.set("Number", record.get('Number')
+                                                + Number);
+                                            Ext.MessageBox.alert('Добавление в корзину', 'Товар был добавлен в корзину.\
+                                                Тк данный товар уже имеется в корзине, его количество было увеличено на указанное число! ');
+                                            return;
+                                        }
+                                        ShopCart.getStore().add({
+                                            Code: grid.getSelectionModel().getSelection()[0].get('Code'),
+                                            Category: grid.getSelectionModel().getSelection()[0].get('Category'),
+                                            Name: grid.getSelectionModel().getSelection()[0].get('Name'),
+                                            Price:  grid.getSelectionModel().getSelection()[0].get('Price'),
+                                            Number: Number,
+                                            Id: grid.getSelectionModel().getSelection()[0].get('Id')
+                                    });
+                                    
+                                }
+                            }],
+                            dockedItems: [
+                                {
+                                    dock: 'bottom',
+                                    xtype: 'label',
+                                    html: '<font color="red" size="1">* - поля обязательные к заполнению </font>'
+                                }
+                            ]
+                        });
+                        var win = new Ext.Window({
+                            title: 'Укажите количество товара',
+                            autoScroll: true,
+                            modal: true,
+                            items: [formPanel],
+                            closable: true
+                        });
+                        win.show();
+
+                    }
+                }
+            }]
+
+
+        });
+        var MainPanel = Ext.create('Ext.panel.Panel',
+             {
+                width: '100%',
+                 height: 200,
+                 layout: {
+                     type: 'hbox',
+                     align: 'stretch'
+                 },
+                 items: [grid, ShopCart],
+                 renderTo: 'ItemsTableUser'
+
+             });
+
+    });
+
+
+
+</script>
+<div class="container">
+    <ul>
+        <li class="one">@Html.ActionLink("About", "Index", "Home", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+        <!--
+        -->
+        <li class="two">@Html.ActionLink("Каталог товаров", "GetWithoutOrderView", "Item", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+        <!--
+        -->
+        <li class="three">@Html.ActionLink("Мои заказы", "UserOrderView", "Order")</li>
+        <hr class="twohr" />
+    </ul>
+</div>
+<div id="ItemsTableUser"></div>
+

@@ -1,0 +1,347 @@
+﻿@model WebShop.Models.IndexViewModel
+@{
+    ViewBag.Title = "Home";
+}
+<script type="text/javascript">
+    Ext.onReady(function () {
+
+
+        Ext.define('User', {
+            extend: 'Ext.data.Model',
+
+            idProperty: 'userID',
+
+            fields: [{
+                name: 'Code',
+                type: 'string'
+            }, {
+                name: 'Category',
+                type: 'string'
+            }, {
+                name: 'Name',
+                type: 'string'
+            }, {
+                name: 'Price',
+                type: 'int'
+            },
+            {
+                name: 'Id',
+                type: 'string'
+            }]
+        });
+
+        var store = Ext.create('Ext.data.Store', {
+            model: 'User',
+            autoLoad: true,
+            proxy: {
+                type: 'ajax',
+                api:
+                    {
+                        update: '/Item/Update',
+                        read: '/Item/Get'
+                    },
+                reader:
+                    {
+                       
+                        idProperty: 'Id',
+                        type: 'json',
+                        root: 'Data'
+                    },
+                writer:
+                   {
+                       type: 'json',
+                       listful: true,
+                       writeAllFields: true,
+                       encode: false,
+                       returnJson: true
+                   }
+            }
+        });
+        
+       
+      var grid =  Ext.create('Ext.grid.Panel', {
+            height: 300,
+            width: '100%',
+            store: store,
+            renderTo: 'ItemsTable',
+            columns: [{
+                header: 'Код товара',
+                dataIndex: 'Code'
+            }, {
+                header: 'Наименование товара',
+                dataIndex: 'Name'
+            }, {
+                header: 'Цена',
+                dataIndex: 'Price',
+                flex: 1
+            }, {
+                header: 'Категория товара',
+                dataIndex: 'Category',
+                flex: 1
+            } ],
+            renderTo: 'ItemsTable',
+            fbar: ['->', {
+                xtype: 'button',
+                text: 'Добавить',
+                margin: '5 0 0 5',
+                listeners:
+                {
+                    click: function () {
+                        var formPanel = Ext.create('Ext.form.Panel', {
+                            width: 300,
+                            height: 250,
+
+                            items: [{
+                                xtype: 'textfield',
+                                fieldLabel: 'Код товара  <font color="red">*</font>',
+                                name: 'Code',
+                                labelAlign: 'top',
+                                flex: 1
+                            }, {
+                                xtype: 'textfield',
+                                fieldLabel: 'Наименование товара',
+                                name: 'Name',
+                                labelAlign: 'top',
+                                flex: 1
+                            }, {
+                                xtype: 'numberfield',
+                                fieldLabel: 'Цена',
+                                name: 'Price',
+                                minValue: 0,
+                                maxValue: 100,
+                            }, {
+                                xtype: 'textfield',
+                                boxLabel: 'Категория товара',
+                                name: 'Category',
+                                checked: 'true',
+                            }],
+                            buttons: [{
+                                text: 'ОК',
+                                handler: function () {
+                                    var gridRow = grid.getStore().recordType;
+                                    var Code = formPanel.items.get(0).getValue();
+                                    
+                                    if (Code.match(/\d{2}-\d{4}-[A-Z]{2}\d{2}/) == null)
+                                    {
+                                        Ext.MessageBox.alert('Error', 'Введен не допустимый код товара!');
+                                        return;
+                                    }
+                                    var Name = formPanel.items.get(1).getValue();
+                                    if (isEmpty(Name))
+                                        Name = "";
+                                    var Category = formPanel.items.get(3).getValue();
+                                    if (isEmpty(Category))
+                                        Category = "";
+                                    var Price = formPanel.items.get(2).getValue();
+                                    if (Price == null || Price === undefined) {
+                                        Price = 0;
+                                    }
+                                    var sndData = new Object();
+                                    sndData.Code = Code;
+                                    sndData.Name = Name;
+                                    sndData.Price = Price;
+                                    sndData.Category = Category;
+                                    Ext.Ajax.request({
+                                            method:'POST',
+                                            url: '/Item/Create',
+                                            headers: {
+                                                'Content-Type': 'application/json; charset=utf-8'
+                                            },
+                                            params : {
+                                               
+                                        
+                                            },
+                                            jsonData:Ext.JSON.encode(sndData),
+                                            success: function (response) {
+                                               // grid.store.sync();
+                                                grid.store.load();
+                                             
+                                            Ext.MessageBox.alert('Add', 'The row data has been added!');
+
+                                        },
+                                        failure: function (response, opts) {
+                                            Ext.MessageBox.alert('Add', response.responseText);
+                                        }
+                             
+                                    });
+
+                                  
+                                    
+                                }
+                            }],
+                            dockedItems: [
+                                {
+                                    dock: 'bottom',
+                                    xtype: 'label',
+                                    html: '<font color="red" size="1">* - поля обязательные к заполнению </font>'
+                                }
+                            ]
+                        });
+                       
+                        var win = new Ext.Window({
+                            title: 'Создать',
+                            autoScroll: true,
+                            modal: true,
+                            items: [formPanel],
+                            closable: true
+                        });
+                        win.show();
+
+                    }
+                }
+            },{
+                xtype: 'button',
+                text: 'Изменить',
+                margin: '0 0 0 5',
+                listeners: 
+                {
+                    click: function () {
+                        if (grid.getSelectionModel().getCount() <= 0) {
+                            Ext.MessageBox.alert('Error', 'Необходимо выбрать товар для выполнения операции!');
+                            return;
+                        }
+                        var model = grid.getSelectionModel().getSelection();
+                        var formPanel = Ext.create('Ext.form.Panel', {
+                            width: 300,
+                            height: 250,
+
+
+                            layout: 'anchor',
+                            defaults: {
+                                anchor: '80%'
+                            },
+
+                            items: [{
+                                xtype: 'textfield',
+                                fieldLabel: 'Код товара',
+                                name: 'Code',
+                                labelAlign: 'top',
+                                flex: 1
+                            }, {
+                                xtype: 'textfield',
+                                fieldLabel: 'Наименование товара',
+                                name: 'Name',
+                                labelAlign: 'top',
+                                flex: 1
+                            }, {
+                                xtype: 'numberfield',
+                                fieldLabel: 'Цена',
+                                name: 'Price',
+                                minValue: 0,
+                                maxValue: 100
+                            }, {
+                                xtype: 'textfield',
+                                fieldLabel: 'Категория товара   <font color="red">*</font>',
+                                name: 'Category'
+                                
+                            }],
+                            buttons: [{
+                                text: 'ОК',
+                                handler: function () {
+                                    var Code = formPanel.items.get(0).getValue();
+                                    if (Code.match(/\d{2}-\d{4}-[A-Z]{2}\d{2}/) == null) {
+                                        Ext.MessageBox.alert('Error', 'Введен не допустимый код товара!');
+                                        return;
+                                    }
+                                    var Name = formPanel.items.get(1).getValue();
+                                    if (isEmpty(Name))
+                                        Name = "";
+                                    var Category = formPanel.items.get(3).getValue();
+                                    if (isEmpty(Category))
+                                        Category = "";
+                                    var Price = formPanel.items.get(2).getValue();
+                                    if (Price == null || Price === undefined)
+                                    {
+                                        Price = 0;
+                                    }
+                                    grid.getSelectionModel().getSelection()[0].set('Code', Code);
+                                    grid.getSelectionModel().getSelection()[0].set('Name', Name);
+                                    grid.getSelectionModel().getSelection()[0].set('Price', Price);
+                                    grid.getSelectionModel().getSelection()[0].set('Category', Category);
+                                    grid.store.sync();
+                                }
+                            }],
+                            dockedItems: [
+                                {
+                                    dock: 'bottom',
+                                    xtype: 'label',
+                                    html: '<font color="red" size="1">* - поля обязательные к заполнению </font>'
+                                }
+                            ]
+                        });
+                        formPanel.getForm().loadRecord(model[0]);
+                        var win = new Ext.Window({
+                            title: 'Изменить',
+                            autoScroll: true,
+                            modal: true,
+                            items: [formPanel],
+                            closable: true
+                        });
+                        win.show();
+                    }
+                }
+               
+            }, {
+                xtype: 'button',
+                text: 'Удалить',
+                margin: '0 0 0 5',
+                listeners: 
+               {
+                   click: function () {
+                       if (grid.getSelectionModel().getCount() <= 0) {
+                           Ext.MessageBox.alert('Error', 'Необходимо выбрать товар для выполнения операции!');
+                           return;
+                       }
+                       var Id = grid.getSelectionModel().getSelection()[0].get('Id');
+                       var snd = new Object();
+                       snd.Id = Id;
+                       Ext.Ajax.request({
+                           method: 'POST',
+                           url: '/Item/Delete',
+                           headers: {
+                               'Content-Type': 'application/json; charset=utf-8'
+                           },
+                           params: {
+
+
+                           },
+                           jsonData: Ext.JSON.encode(snd),
+                           success: function (response) {
+                               grid.store.load();
+
+                               Ext.MessageBox.alert('Remove', 'The row data has been Remove!');
+
+                           },
+                           failure: function (response, opts) {
+                               Ext.MessageBox.alert('Remove', response.responseText);
+                           }
+                           
+                       });
+                   }
+               }
+               
+            }]
+       });
+     
+       
+        
+    });
+
+</script>
+
+<div class="container">
+    <ul>
+        <li class="one">@Html.ActionLink("About", "Index", "Home")</li>
+        <!--
+    -->
+        <li class="two">@Html.ActionLink("Каталог товаров", "Index", "Item")</li>
+        <!--
+    -->
+        <li class="three">@Html.ActionLink("Заказы", "ManagerOrderView", "Order")</li>
+        <!--
+    -->
+        <li class="four">@Html.ActionLink("Пользователи", "AdminView", "Account")</li>
+        <hr class="twohr" />
+    </ul>
+</div>
+<div id="ItemsTable" class="AllControll"></div>

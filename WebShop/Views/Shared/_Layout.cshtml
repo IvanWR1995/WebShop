@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+
+    <title>@ViewBag.Title - My ASP.NET Application</title>
+
+    @Styles.Render("~/Content/extjs")
+    @Scripts.Render("~/bundles/extjs")
+    <script src="~/Scripts/jquery-3.3.1.js"></script>
+    <script src="~/Scripts/jquery.unobtrusive-ajax.js"></script>
+    <script>$("div").eq(0).css("all", "initial")</script>
+    <script>
+        function isEmpty(str) {
+            if (str != null && typeof str !== undefined) {
+                str = str.trim();
+            }
+            if (!str) {
+                return true;
+            }
+            return false;
+        }
+    </script>
+    <style>
+        * {
+            box-sizing: border-box !important;
+        }
+
+        body {
+            font: 200 100% 'Helvetica Neue', Helvetica, Arial !important;
+        }
+
+        .container {
+            position: relative;
+            width: 50% !important;
+            left: 35% !important;
+        }
+
+        ul li {
+            display: inline !important;
+            text-align: center !important;
+        }
+
+        a {
+            display: inline-block !important;
+            width: 20% !important;
+            padding: .75rem 0 !important;
+            margin: 0 !important;
+            text-decoration: none !important;
+            color: #333 !important;
+        }
+
+        .one:hover ~ hr {
+            margin-left: 0 !important;
+        }
+
+        .two:hover ~ hr {
+            margin-left: 20% !important;
+        }
+
+        .three:hover ~ hr {
+            margin-left: 40% !important;
+        }
+
+        .four:hover ~ hr {
+            margin-left: 60% !important;
+        }
+
+        hr {
+            height: .25rem !important;
+            width: 20% !important;
+            margin-left: 0 !important;
+            background: #87CEFA !important;
+            border: none !important;
+            transition: .3s ease-in-out !important;
+        }
+
+        .twohr {
+            height: .25rem !important;
+            width: 20% !important;
+            margin-left: 20% !important;
+            background: #87CEFA !important;
+            border: none !important;
+            transition: .3s ease-in-out !important;
+        }
+
+        .threehr {
+            height: .25rem !important;
+            width: 20% !important;
+            margin-left: 40% !important;
+            background: #87CEFA !important;
+            border: none !important;
+            transition: .3s ease-in-out !important;
+        }
+
+        .fourhr {
+            height: .25rem !important;
+            width: 20% !important;
+            margin-left: 60% !important;
+            background: #87CEFA !important;
+            border: none !important;
+            transition: .3s ease-in-out !important;
+        }
+
+        .AllControll {
+            margin: 10px;
+        }
+        .ContentLogoff {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+        }
+        .LogoffButton {
+         display:list-item !important;
+         background:#ffffff;
+         border-style: solid;
+       
+         width: 100px;
+         border-width: 1px;
+         font-size: 14px;
+         padding: 0px;
+        } 
+       .LogoffButton:hover
+    {
+    border-left:1px solid #eee;
+    border-top:1px solid #eee;
+    border-right:1px solid #87CEFA ;
+    border-bottom:1px solid #87CEFA ;
+    }
+        
+        .UserLabel {
+            display:list-item !important;
+             font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+
+
+    @RenderBody()
+
+    @Html.Partial("_LoginPartial")
+</body>
+</html>

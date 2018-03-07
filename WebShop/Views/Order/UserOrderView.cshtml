@@ -1,0 +1,232 @@
+﻿
+@{
+    ViewBag.Title = "UserOrderView";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    Ext.onReady(function () {
+        Ext.define('Items', {
+            extend: 'Ext.data.Model',
+
+            idProperty: 'CartID',
+
+            fields: [{
+                name: 'Code',
+                type: 'string'
+            }, {
+                name: 'Category',
+                type: 'string'
+            }, {
+                name: 'Name',
+                type: 'string'
+            }, {
+                name: 'Price',
+                type: 'int'
+            },
+             {
+                 name: 'Number',
+                 type: 'int'
+             },
+            {
+                name: 'Id',
+                type: 'string'
+            }]
+        });
+        var StoreMemory = Ext.create('Ext.data.Store', {
+            model: 'Items',
+            proxy: {
+                type: 'memory',
+                reader:
+                    {
+                        type: 'json'
+                    }
+            }
+        });
+        var ItemsInOrderGrid = Ext.create('Ext.grid.Panel', {
+            height: 300,
+            title: 'Корзина',
+            store: StoreMemory,
+            flex: 1,
+            margin: '0 0 0 10',
+            columns: [{
+                header: 'Код товара',
+                dataIndex: 'Code'
+            }, {
+                header: 'Наименование товара',
+                dataIndex: 'Name'
+            }, {
+                header: 'Цена',
+                dataIndex: 'Price',
+                flex: 1
+            }, {
+                header: 'Категория товара',
+                dataIndex: 'Category',
+                flex: 1
+            }, {
+                header: 'Количество',
+                dataIndex: 'Number',
+                flex: 1
+            }]
+        });
+        Ext.define('Order', {
+            extend: 'Ext.data.Model',
+
+            idProperty: 'orderID',
+
+            fields: [{
+                name: 'OrderDate',
+                type: 'string'
+                
+            }, {
+                name: 'ShipmentDate',
+                type: 'string'
+            }, {
+                name: 'Status',
+                type: 'string'
+            }, {
+                name: 'OrderNumber',
+                type: 'int'
+            },
+            {
+                name: 'Items',
+                type:'auto'
+            },,
+            {
+                name: 'Id',
+                type: 'string'
+            }]
+        });
+   
+
+        var StoreOrder = Ext.create('Ext.data.Store', {
+            model: 'Order',
+            autoLoad: true,
+            proxy: {
+                type: 'ajax',
+                api:
+                    {
+
+                        read: '/Order/GetOrderWithItems'
+                    },
+                reader:
+                    {
+
+                        idProperty: 'Id',
+                        type: 'json',
+                        root: 'Data'
+                    }
+            }
+        });
+        var OrderGrid = Ext.create('Ext.grid.Panel',  {
+            height: 300,
+            title: 'Заказы',
+            store: StoreOrder,
+            flex: 1,
+            margin: '0 0 0 10',
+            columns: [{
+                header: 'Дата создания',
+                dataIndex: 'OrderDate'
+            }, {
+                header: 'Дата доставки',
+                dataIndex: 'ShipmentDate'
+            }, {
+                header: 'Статус',
+                dataIndex: 'Status',
+                flex: 1
+            }, {
+                header: 'Номер заказа',
+                dataIndex: 'OrderNumber',
+                flex: 1
+            }/*, {
+                header: 'Id',
+                dataIndex: 'Id',
+                flex: 1
+            }*/],
+            listeners:
+                {
+                    select: function (record, index, eOpts) {
+                        ItemsInOrderGrid.getStore().removeAll();
+                        ItemsInOrderGrid.getStore().loadData(this.getSelectionModel().getSelection()[0].get('Items'));
+                    }
+                },
+            fbar: ['->', {
+                xtype: 'button',
+                text: 'Удалить  заказ',
+                width: 200,
+                margin: '5 0 0 5',
+                listeners:
+                {
+                    click: function ()
+                    {
+                        if (OrderGrid.getSelectionModel().getCount() > 0)
+                        {
+                            var Status = OrderGrid.getSelectionModel().getSelection()[0].get('Status');
+                            if (Status != 'Новый')
+                            {
+                                Ext.MessageBox.alert('Удаление заказа', 'Можно удалить заказы только имеющие статус "Новый"!');
+                                return;
+                            }
+                            var sndObject = new Object();
+                            sndObject.Id = OrderGrid.getSelectionModel().getSelection()[0].get('Id');
+                            
+                           
+                            Ext.Ajax.request({
+                                method: 'POST',
+                                url: '/Order/Delete',
+                                headers: {
+                                    'Content-Type': 'application/json; charset=utf-8'
+                                },
+                                params: {
+
+
+                                },
+                                jsonData: Ext.JSON.encode(sndObject),
+                                success: function (response) {
+                                    var jsonData = Ext.JSON.decode(response.responseText);
+                                    if (jsonData.success == true) {
+
+                                        OrderGrid.getStore().remove(OrderGrid.getSelectionModel().getSelection()[0]);
+                                        ItemsInOrderGrid.getStore().removeAll();
+                                        Ext.MessageBox.alert('Удаление заказа', 'Заказ был успешно удален!');
+                                    }
+                                
+                                }
+                                //          scope: this,
+                                //            jsonData: sndData
+                            });
+                        }
+                        else 
+                            Ext.MessageBox.alert('Предупреждение', 'Выберете отменяемый заказ!');
+                    }
+                }
+            }]
+        });
+       
+        var MainPanel = Ext.create('Ext.panel.Panel',
+           {
+               width: '100%',
+               height: 200,
+               layout: {
+                   type: 'hbox',
+                   align: 'stretch'
+               },
+               items: [OrderGrid, ItemsInOrderGrid],
+               renderTo: 'OrderTableUser'
+
+           });
+    });
+</script>
+<div class="container">
+    <ul>
+        <li class="one">@Html.ActionLink("About", "Index", "Home")</li>
+        <!--
+        -->
+        <li class="two">@Html.ActionLink("Каталог товаров", "GetWithoutOrderView", "Item")</li>
+        <!--
+        -->
+        <li class="three">@Html.ActionLink("Мои заказы", "UserOrderView", "Order")</li>
+        <hr class="threehr" />
+    </ul>
+</div>
+<div id="OrderTableUser"></div>
+

@@ -1,0 +1,49 @@
+/** {
+  box-sizing: border-box !important;
+}
+
+body {
+  font: 200 100% 'Helvetica Neue', Helvetica, Arial !important;
+}
+
+.container {
+  width: 50% !important;
+  margin: 0 auto !important;
+}
+
+ul li {
+  display: inline !important;
+  text-align: center !important;
+}
+
+a {
+  display: inline-block !important;
+  width: 20% !important;
+  padding: .75rem 0 !important;
+  margin: 0 !important;
+  text-decoration: none !important;
+  color: #333 !important;
+}
+.one:hover ~ hr {
+  margin-left: 0 !important;
+}
+.two:hover ~ hr {
+  margin-left: 20% !important;
+}
+
+.three:hover ~ hr {
+  margin-left: 40% !important;
+}
+
+.four:hover ~ hr {
+  margin-left: 60% !important;
+}
+
+hr {
+  height: .25rem !important;
+  width: 20% !important;
+  margin: 0 !important;
+  background: tomato !important;
+  border: none !important;
+  transition: .3s ease-in-out !important;
+}*/

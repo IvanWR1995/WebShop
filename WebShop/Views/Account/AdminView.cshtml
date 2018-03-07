@@ -1,0 +1,539 @@
+﻿
+@{
+    ViewBag.Title = "AdminView";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script>
+    Ext.onReady(function () {
+        
+        Ext.define('User', {
+            extend: 'Ext.data.Model',
+
+            idProperty: 'UserID',
+
+            fields: [
+                {
+                    name: 'Code',
+                    type: 'string'
+                }, {
+                    name: 'Login',
+                    type: 'string'
+                }, {
+                    name: 'Discount',
+                    type: 'float'
+                },
+                {
+                    name: 'Role',
+                    type: 'string'
+                },
+                 {
+                     name: 'Id',
+                     type: 'string'
+                 }
+            ]
+        });
+        var StoreUser = Ext.create('Ext.data.Store', {
+            model: 'User',
+            autoLoad: true,
+            proxy: {
+                type: 'ajax',
+                api:
+                    {
+
+                        read: '/Account/GetUsers'
+                    },
+                reader:
+                    {
+
+                        idProperty: 'Id',
+                        type: 'json',
+                        root: 'Data'
+                    }
+            }
+
+        });
+        var UserGrid = Ext.create('Ext.grid.Panel', {
+                height: 300,
+                title: 'Пользователи',
+                store: StoreUser,
+                flex: 1,
+                margin: '0 0 0 10',
+                renderTo:"UserTable",
+                columns: [
+                {
+                    header: 'Пользователь',
+                    dataIndex: 'Login'
+                },
+
+                {
+                    header: 'Роль',
+                    dataIndex: 'Role'
+                }, {
+                    header: 'Код',
+                    dataIndex: 'Code'
+                }, {
+                    header: 'Скидка',
+                    dataIndex: 'Discount',
+                    
+                }],  fbar: ['->', {
+                        xtype: 'button',
+                        text: 'Изменить логин',
+                        margin: '5 0 0 5',
+                        listeners:
+                        {
+                            click: function ()
+                            {
+                                if (UserGrid.getSelectionModel().getCount() <= 0) {
+                                    Ext.MessageBox.alert('Error', 'Необходимо выбрать пользователя для выполнения операции!');
+                                    return;
+                                }
+                                var formPanel = Ext.create('Ext.form.Panel', {
+                                    width: 400,
+                                    height: 250,
+                                    items: [
+                                        {
+                                            xtype: 'textfield',
+                                            fieldLabel: 'Логин(Email) <font color="red">*</font>',
+                                            name: 'Login',
+                                            labelAlign: 'top'
+                                        }
+                                    ],
+                                    buttons: [{
+                                        text: 'ОК',
+                                        handler: function () {
+                                            var sndData = new Object();
+                                            sndData.Login = formPanel.items.get(0).getValue();
+                                            if (isEmpty(sndData.Login))
+                                            {
+                                                Ext.MessageBox.alert('Error', 'Логин обязателен к заполнению!');
+                                                return;
+                                            }
+                                            sndData.Id = UserGrid.getSelectionModel().getSelection()[0].get('Id');
+                                            Ext.Ajax.request({
+                                                method: 'POST',
+                                                url: '/Account/UpdateLogin',
+                                                headers: {
+                                                    'Content-Type': 'application/json; charset=utf-8'
+                                                },
+                                                params: {
+
+
+                                                },
+                                                jsonData: Ext.JSON.encode(sndData),
+                                                success: function (response) {
+                                                    var jsonData = Ext.JSON.decode(response.responseText);
+                                                    if (jsonData.success == true) {
+                                                        UserGrid.getStore().load();
+                                                        Ext.MessageBox.alert('Success', 'Логин и пароль были удачно изменены!');
+                                                    }
+                                                    else
+                                                        Ext.MessageBox.alert('Error', jsonData.Msg);
+
+                                                },
+                                                failure: function (response, opts) {
+                                                    Ext.MessageBox.alert('Error', 'Ошибка операции');
+                                                }
+                                                
+                                            });
+                                        }
+                                    }],
+                                    dockedItems: [
+                                        {
+                                            dock: 'bottom',
+                                            xtype: 'label',
+                                            html: '<font color="red" size="1">* - поля обязательные к заполнению </font>'
+                                        }
+                                    ]
+                                });
+                                var win = new Ext.Window({
+                                    title: 'Изменить логин',
+                                    autoScroll: true,
+                                    modal: true,
+                                    items: [formPanel],
+                                    closable: true
+                                });
+                                win.show();
+                            }
+                        }
+                }, {
+                    xtype: 'button',
+                    text: 'Удалить пользователя',
+                    margin: '5 0 0 5',
+                    listeners:
+                    {
+                        click: function () {
+                            if (UserGrid.getSelectionModel().getCount() <= 0) {
+                                Ext.MessageBox.alert('Error', 'Необходимо выбрать пользователя для выполнения операции!');
+                                return;
+                            }
+                            var sndData = new Object();
+                            sndData.Id = UserGrid.getSelectionModel().getSelection()[0].get('Id');
+                            Ext.Ajax.request({
+                                method: 'POST',
+                                url: '/Account/RemoveUser',
+                                headers: {
+                                    'Content-Type': 'application/json; charset=utf-8'
+                                },
+                                params: {
+
+
+                                },
+                                jsonData: Ext.JSON.encode(sndData),
+                                success: function (response) {
+                                    var jsonData = Ext.JSON.decode(response.responseText);
+                                    if (jsonData.success == true) {
+                                        UserGrid.getStore().load();
+                                        Ext.MessageBox.alert('Success', 'Пользователь был удачно удален!');
+                                    }
+                                    else
+                                        Ext.MessageBox.alert('Error', jsonData.Msg);
+
+                                },
+                                failure: function (response, opts) {
+                                    Ext.MessageBox.alert('System error', 'Ошибка операции');
+                                }
+                                //          scope: this,
+                                //            jsonData: sndData
+                            });
+                           
+                        }
+                    }
+                },
+                    {
+                        xtype: 'button',
+                        text: 'Изменить пароль',
+                        margin: '5 0 0 5',
+                        listeners:
+                        {
+                            click: function () {
+                                if (UserGrid.getSelectionModel().getCount() <= 0) {
+                                    Ext.MessageBox.alert('Error', 'Необходимо выбрать пользователя для выполнения операции!');
+                                    return;
+                                }
+                                var formPanel = Ext.create('Ext.form.Panel', {
+                                    width: 400,
+                                    height: 250,
+                                    items: [
+                                        {
+                                            xtype: 'textfield',
+                                            fieldLabel: 'Пароль <font color="red">*</font>',
+                                            name: 'Pwd',
+                                            inputType: 'password',
+                                            labelAlign: 'top'
+                                        },
+                                         {
+                                             xtype: 'textfield',
+                                             fieldLabel: 'Подтвердите пароль <font color="red">*</font>',
+                                             name: 'PwdConfirm',
+                                             inputType: 'password',
+                                             labelAlign: 'top'
+                                         }
+                                    ],
+                                    buttons: [{
+                                        text: 'ОК',
+                                        handler: function () {
+                                            if (UserGrid.getSelectionModel().getCount() <= 0) {
+                                                Ext.MessageBox.alert('Error', 'Необходимо выбрать пользователя для выполнения операции!');
+                                                return;
+                                            }
+                                            var sndData = new Object();
+                                            sndData.Pwd = formPanel.items.get(0).getValue();
+                                            var PwdConfirm = formPanel.items.get(1).getValue();
+                                            if (isEmpty(sndData.Pwd))
+                                            {
+                                                Ext.MessageBox.alert('Error', 'Ввод пароля обязятелен!');
+                                                return;
+                                            }
+                                            if (isEmpty(PwdConfirm)) {
+                                                Ext.MessageBox.alert('Error', 'Подтверждение пароля обязательно!');
+                                                return;
+                                            }
+                                            if (PwdConfirm != sndData.Pwd)
+                                            {
+                                                Ext.MessageBox.alert('Error', 'Пароли не совпадают!');
+                                                return;
+                                            }
+                                            sndData.Id = UserGrid.getSelectionModel().getSelection()[0].get('Id');
+                                            Ext.Ajax.request({
+                                                method: 'POST',
+                                                url: '/Account/UpdatePwd',
+                                                headers: {
+                                                    'Content-Type': 'application/json; charset=utf-8'
+                                                },
+                                                params: {
+
+
+                                                },
+                                                jsonData: Ext.JSON.encode(sndData),
+                                                success: function (response) {
+                                                    var jsonData = Ext.JSON.decode(response.responseText);
+                                                    if (jsonData.success == true) {
+                                                        UserGrid.getStore().load();
+                                                        Ext.MessageBox.alert('Success', 'Пароль был удачно изменен!');
+                                                    }
+                                                    else
+                                                        Ext.MessageBox.alert('Error', jsonData.Msg);
+
+                                                },
+                                                failure: function (response, opts) {
+                                                    Ext.MessageBox.alert('System error', 'Ошибка операции');
+                                                }
+                                               
+                                            });
+                                        }
+                                    }],
+                                    dockedItems: [
+                                        {
+                                            dock: 'bottom',
+                                            xtype: 'label',
+                                            html: '<font color="red" size="1">* - поля обязательные к заполнению </font>'
+                                        }
+                                    ]
+                                });
+                                var win = new Ext.Window({
+                                    title: 'Изменить пароль',
+                                    autoScroll: true,
+                                    modal: true,
+                                    items: [formPanel],
+                                    closable: true
+                                });
+                                win.show();
+                            }
+                        }
+                    },
+                     {
+                         xtype: 'button',
+                         text: 'Изменить скидку',
+                         margin: '5 0 0 5',
+                         listeners:
+                         {
+                             click: function () {
+                                 if (UserGrid.getSelectionModel().getCount() <= 0)
+                                 {
+                                     Ext.MessageBox.alert('Error', 'Необходимо выбрать пользователя для выполнения операции!');
+                                     return;
+                                 }
+                                 var formPanel = Ext.create('Ext.form.Panel', {
+                                     width: 400,
+                                     height: 250,
+                                     items: [
+                                         {
+                                             xtype: 'numberfield',
+                                             decimalPrecision: 2,
+                                             fieldLabel: 'Скидка',
+                                             maxValue: 100,
+                                             name: 'Discount',
+                                             labelAlign: 'top'
+                                         }
+                                     ],
+                                     buttons: [{
+                                         text: 'ОК',
+                                         handler: function () {
+                                             var sndData = new Object();
+                                             sndData.Discount = formPanel.items.get(0).getValue();
+                                             if (sndData.Discount > 100)
+                                             {
+                                                 Ext.MessageBox.alert('Error', 'Скидка не может быть больше 100%!');
+                                                 return;
+                                             }
+                                             sndData.Id = UserGrid.getSelectionModel().getSelection()[0].get('Id');
+                                             Ext.Ajax.request({
+                                                 method: 'POST',
+                                                 url: '/Customer/UpdateDiscount',
+                                                 headers: {
+                                                     'Content-Type': 'application/json; charset=utf-8'
+                                                 },
+                                                 params: {
+
+
+                                                 },
+                                                 jsonData: Ext.JSON.encode(sndData),
+                                                 success: function (response) {
+                                                     var jsonData = Ext.JSON.decode(response.responseText);
+                                                     if (jsonData.success == true) {
+                                                         UserGrid.getStore().load();
+                                                         Ext.MessageBox.alert('Success', 'скидка удачно изменена!');
+                                                     }
+                                                     else
+                                                         Ext.MessageBox.alert('Error', jsonData.Msg);
+
+                                                 },
+                                                 failure: function (response, opts) {
+                                                     Ext.MessageBox.alert('System Error', 'Ошибка операции');
+                                                 }
+                                                 //          scope: this,
+                                                 //            jsonData: sndData
+                                             });
+                                         }
+                                     }]
+                                 });
+                                 var win = new Ext.Window({
+                                     title: 'Изменить скидку',
+                                     autoScroll: true,
+                                     modal: true,
+                                     items: [formPanel],
+                                     closable: true
+                                 });
+                                 win.show();
+                             }
+                         }
+                     },
+                     {
+                         xtype: 'button',
+                         text: 'Создать пользователя',
+                         margin: '5 0 0 5',
+                         listeners:
+                         {
+                             click: function ()
+                             {
+                                 var Roles = Ext.create('Ext.data.Store', {
+                                     fields: ['name'],
+                                     data: [
+                                         { "name": "Manager" },
+                                         { "name": "user" }
+
+                                     ]
+                                 });
+                                 var combobox = Ext.create('Ext.form.ComboBox', {
+                                     fieldLabel: 'Роль <font color="red">*</font>',
+                                     store: Roles,
+                                     queryMode: 'local',
+                                     displayField: 'name'
+                                 });
+                                 var formPanel = Ext.create('Ext.form.Panel', {
+                                     width: 300,
+                                     height: 250,
+                                     items: [{
+                                         xtype: 'textfield',
+                                         fieldLabel: 'Логин(Email)  <font color="red">*</font>',
+                                         name: 'Login',
+                                         labelAlign: 'top',
+                                         flex: 1
+                                     }, {
+                                         xtype: 'textfield',
+                                         fieldLabel: 'Пароль <font color="red">*</font>',
+                                         inputType: 'password',
+                                         name: 'Password',
+                                         labelAlign: 'top',
+                                         flex: 1
+                                     },
+                                      {
+                                          xtype: 'textfield',
+                                          fieldLabel: ' Подтвердите пароль  <font color="red">*</font>',
+                                          inputType: 'password',
+                                          name: 'Password',
+                                          labelAlign: 'top',
+                                          flex: 1
+                                      }, combobox
+                                     ],
+                                     buttons: [
+                                         {
+                                             text: 'ОК',
+                                             handler: function () {
+                                                 var role = formPanel.items.get(3).getValue();
+                                                 if (Roles.findRecord("name",role) == null)
+                                                 {
+                                                     Ext.MessageBox.alert('Error', 'Не допустимая роль!');
+                                                     return;
+                                                 }
+
+                                                 var Password = formPanel.items.get(1).getValue();
+                                                 
+                                                 if (isEmpty(Password))
+                                                 {
+                                                     Ext.MessageBox.alert('Error', 'Пароль обязателен к заполнению!');
+                                                     return;
+                                                 }
+
+                                                 var ConfirmPassword = formPanel.items.get(2).getValue();
+                                                 if (isEmpty(ConfirmPassword)) {
+                                                     Ext.MessageBox.alert('Error', 'Подтверждение пароля обязательно!');
+                                                     return;
+                                                 }
+
+                                                 var Login = formPanel.items.get(0).getValue();
+                                                 if (isEmpty(Login)) {
+                                                     Ext.MessageBox.alert('Error', 'Ввод логина обязательно!');
+                                                     return;
+                                                 }
+                                                 if (Password != ConfirmPassword) {
+                                                     Ext.MessageBox.alert('Создание пользователя', 'Пароли не совпадают!');
+                                                     return;
+                                                 }
+                                                 var sndData = new Object();
+                                                 sndData.Login = Login;
+                                                 sndData.Pwd = Password;
+                                                
+                                                 sndData.Role = role;
+                                                
+                                                 Ext.Ajax.request({
+                                                     method: 'POST',
+                                                     url: '/Account/CreateUser',
+                                                     headers: {
+                                                         'Content-Type': 'application/json; charset=utf-8'
+                                                     },
+                                                     params: Ext.JSON.encode(sndData),
+                                                     success: function (response)
+                                                     {
+                                                        
+                                                         var jsonData = Ext.JSON.decode(response.responseText);
+                                                         if (jsonData.success != true)
+                                                             Ext.MessageBox.alert('Создание пользователя', response.responseText);
+                                                         else 
+                                                             UserGrid.getStore().load();
+                                                        
+                                                     },
+                                                     failure: function ()
+                                                     {
+                                                         Ext.MessageBox.alert('System Error', 'Ошибка операции');
+                                                     }
+                                                 });
+                                                 
+
+                                             }
+
+                                         }],
+                                     dockedItems: [
+                                         {
+                                             dock: 'bottom',
+                                             xtype: 'label',
+                                             html: '<font color="red" size="1">* - поля обязательные к заполнению </font>'
+                                         }
+                                        ]
+
+                                 });
+                                 var win = new Ext.Window({
+                                     title: 'Создание пользователя',
+                                     autoScroll: true,
+                                     modal: true,
+                                     items: [formPanel],
+                                     closable: true
+                                 });
+                                 win.show();
+                             }
+
+                         }
+                     }
+                ]
+
+        });
+    });
+</script>
+<div class="container">
+    <ul>
+        <li class="one">@Html.ActionLink("About", "Index", "Home")</li>
+        <!--
+        -->
+        <li class="two">@Html.ActionLink("Каталог товаров", "Index", "Item")</li>
+        <!--
+        -->
+        <li class="three">@Html.ActionLink("Заказы", "ManagerOrderView", "Order")</li>
+        <!--
+    -->
+        <li class="four">@Html.ActionLink("Пользователи", "AdminView", "Account")</li>
+        <hr class="fourhr" />
+    </ul>
+    </ul>
+</div>
+<div id="UserTable"></div>

@@ -1,0 +1,22 @@
+﻿@model WebShop.Models.IndexViewModel
+
+
+@if (Request.IsAuthenticated)
+{
+    using (@Html.BeginForm("LogOff","Account", FormMethod.Post, new { id = "logoutForm"}))
+    {
+    @Html.AntiForgeryToken()
+
+    <ul class="ContentLogoff">
+        <li class="UserLabel">
+            @String.Join(String.Empty,"Name:", User.Identity.Name)
+        </li>
+        <li>
+            <input type=submit value="Log off" class="LogoffButton">
+            
+        </li>
+    </ul>
+    }
+}
+
+    

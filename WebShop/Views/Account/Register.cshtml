@@ -1,0 +1,128 @@
+﻿
+@{
+    ViewBag.Title = "Registration";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    Ext.onReady(function () {
+
+        var formPanel = Ext.create('Ext.form.Panel', {
+            width: 300,
+            height: 250,
+            title:'Registration',
+            renderTo: 'RegisterForm',
+            layout: 'anchor',
+            defaults: {
+                anchor: '80%'
+            },
+
+            items: [{
+                xtype: 'textfield',
+                fieldLabel: 'Логин <font color="red">*</font>',
+                name: 'Login',
+                labelAlign: 'top',
+                flex: 1
+            }, {
+                xtype: 'textfield',
+                fieldLabel: 'Пароль <font color="red">*</font>',
+                name: 'Password',
+                inputType: 'password',
+                labelAlign: 'top',
+                flex: 1
+            },
+             {
+                 xtype: 'textfield',
+                 fieldLabel: ' Подтвердите пароль <font color="red">*</font>',
+                 name: 'Password',
+                 inputType: 'password',
+                 labelAlign: 'top',
+                 flex: 1
+             }
+            ],
+            buttons: [
+                {
+                text: 'ОК',
+                type: 'submit',
+                handler: function () {
+                    var Login = formPanel.items.get(0).getValue();
+                    var Password = formPanel.items.get(1).getValue();
+                    if(isEmpty(Login))
+                    {
+                        Ext.MessageBox.alert('Error', 'Необходимо ввести логин!');
+                        return;
+                    }
+                    if(isEmpty(Password))
+                    {
+                        Ext.MessageBox.alert('Error', 'Пароль обязателен для ввода!');
+                        return;
+                    }
+                    var ConfirmPassword = formPanel.items.get(2).getValue();
+                    if(isEmpty(ConfirmPassword))
+                    {
+                        Ext.MessageBox.alert('Error', 'Необходимо подтвердить пароль!');
+                        return;
+                    }
+                    if (Password != ConfirmPassword)
+                    {
+                        Ext.MessageBox.alert('Registration', 'Пароли не совпадают!');
+                        return;
+                    }
+                    var sndData = new Object();
+                    sndData.Email = Login;
+                    sndData.Password = Password;
+                    sndData.ConfirmPassword = ConfirmPassword;
+
+                   Ext.Ajax.request({
+                        method: 'POST',
+                        url: '/Account/Register',
+                        headers: {
+                            'Content-Type': 'application/json; charset=utf-8'
+                        },
+                        params: Ext.JSON.encode(sndData),
+                        success: function (response, opt) {
+
+                           var jsonData = Ext.JSON.decode(response.responseText);
+                           if (jsonData.success != true) 
+                               Ext.MessageBox.alert('Registration', response.responseText);
+                            else
+                                window.location.href = jsonData.Url;
+                               
+
+                        }
+                    });
+
+
+                }
+                }],
+            dockedItems: [
+                {
+                    dock: 'bottom',
+                    xtype: 'label',
+                    html: '<font color="red" size="1">* - поля обязательные к заполнению </font>'
+                }
+           ]
+        });
+    });
+</script>
+<div class="container">
+    <ul>
+        <li class="one">@Html.ActionLink("About", "Index", "Home", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+        <!--
+        -->
+        <li class="two">@Html.ActionLink("Log in", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+        <!--
+        -->
+        <li class="three">@Html.ActionLink("Registration", "Register", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+        <hr class="threehr" />
+    </ul>
+</div>
+<div align="center" style="margin:10%;">
+   
+
+        <section id="RegisterForm"></section>
+
+
+
+   
+
+</div>

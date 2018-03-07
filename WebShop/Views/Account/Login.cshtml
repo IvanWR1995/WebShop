@@ -1,0 +1,118 @@
+﻿@using WebShop.Models
+@model LoginViewModel
+@{
+    ViewBag.Title = "Login";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    Ext.onReady(function () {
+
+        var formPanel = Ext.create('Ext.form.Panel', {
+            width: 300,
+            height: 250,
+            title:'Login',
+            renderTo: 'LoginForm',
+            layout: 'anchor',
+            defaults: {
+                anchor: '80%'
+            },
+
+            items: [{
+                xtype: 'textfield',
+                fieldLabel: 'Логин <font color="red">*</font>',
+                name: 'Login',
+                labelAlign: 'top',
+                flex: 1
+            }, {
+                xtype: 'textfield',
+                fieldLabel: 'Пароль <font color="red">*</font>',
+                name: 'Password',
+                inputType: 'password',
+                labelAlign: 'top',
+                flex: 1
+            }],
+            buttons: [
+                {
+                text: 'ОК',
+                type: 'submit',
+                handler: function () {
+                    var sndData = new Object();
+
+                    sndData.Email = formPanel.items.get(0).getValue();
+                    if (isEmpty(sndData.Email))
+                    {
+                        Ext.MessageBox.alert('Error', 'Введите логин!');
+                        return;
+                    }
+                    sndData.Password = formPanel.items.get(1).getValue();
+                    if (isEmpty(sndData.Password)) {
+                        Ext.MessageBox.alert('Error', 'Введите пароль!');
+                        return;
+                    }
+                    sndData.RememberMe = false;
+
+                   Ext.Ajax.request({
+                        method: 'POST',
+                        url: '/Account/Login',
+                        headers: {
+                            'Content-Type': 'application/json; charset=utf-8'
+                        },
+                        params: Ext.JSON.encode(sndData),
+                       success: function (response) {
+
+                           var jsonData = Ext.JSON.decode(response.responseText);
+                           if (jsonData.success == true) {
+
+                               Ext.MessageBox.alert('Login', 'Login success');
+                               window.location.href = jsonData.Url;
+                           }
+                           else {
+                               Ext.MessageBox.alert('Login', 'Login fail.');
+                           }
+
+                        },
+                        failure: function (response, opts) {
+                            Ext.MessageBox.alert('Login', 'Fail operation');
+                        }
+                        //          scope: this,
+                        //            jsonData: sndData
+                    });
+
+
+                }
+                }],
+            dockedItems: [
+                {
+                    dock: 'bottom',
+                    xtype: 'label',
+                    html: '<font color="red" size="1">* - поля обязательные к заполнению </font>'
+                }
+            ]
+        });
+    });
+</script>
+<div class="container" >
+    <ul>
+        <li class="one" >@Html.ActionLink("About", "Index", "Home", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+        <!--
+        -->
+        <li class="two">@Html.ActionLink("Log in", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+        <!--
+        -->
+        <li class="three">@Html.ActionLink("Registration", "Register", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+        <hr class="twohr" />
+    </ul>
+</div>
+<div align="center" style="margin:10%;">
+    @using (Html.BeginForm("Login", "Account", new { ReturnUrl = ViewBag.ReturnUrl }, FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+    {
+
+        <section id="LoginForm"></section>
+
+
+
+    }
+
+</div>
+
+  
